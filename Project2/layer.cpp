@@ -2,6 +2,34 @@
 
 const std::complex<double> I = { 0,1 };
 
+/**
+ * \brief Значения комплексных корней дисперсионного уравнения для дальнейшего
+ * поиска методом Ньютона
+ */
+const std::vector<std::complex<double>> initial_root_values = {
+	{ 0.0, 0.912784940892 },
+	{ 1.45379095058, 2.57038756409 },
+	{ 2.23310278473, 5.91307674312 },
+	{ 2.64719022914, 9.13968435484 },
+	{ 2.93599785383, 12.3311277936 },
+	{ 3.15887074448, 15.5061637747 },
+	{ 3.34064922434, 18.6720041867 },
+	{ 3.49425096472, 21.8321042181 },
+	{ 3.62729203504, 24.9883519086 },
+	{ 3.74465280440, 28.1418753540 },
+	{ 3.84965331757, 31.2933940416 },
+	{ 3.94465662336, 34.4433903917 },
+	{ 4.03140538392, 37.5922009659 },
+	{ 4.11122209138, 40.7400682812 },
+	{ 4.18513437513, 43.8871718475 },
+	{ 4.25395675138, 47.0336475894 },
+	{ 4.31834583247, 50.1796004514 },
+	{ 4.37883872007, 53.3251128379 },
+	{ 4.43588038346, 56.4702504167 },
+	{ 4.48984361388, 59.6150662064 },
+	{ 4.54104384863, 62.7596035120 }
+};
+
 
 /**
  * \brief вектор правых частей однородной системы уравнений
@@ -14,26 +42,26 @@ std::vector<std::function<std::complex<double>(double,
 		std::complex<double> alpha, double kappa) const
 {
 	const std::function<double(double)> bulk = [=](double t)
-		{
-			return lambda(t) + 2 * mu(t);
-		};
+	{
+		return _lambda(t) + 2 * _mu(t);
+	};
 	return {
 		[=](double x, const std::vector<std::complex<double>>& v)
 		{
-			return I * alpha * v[1] + v[2] / mu(x);
+			return I * alpha * v[1] + v[2] / _mu(x);
 		},
 		[=](double x, const std::vector<std::complex<double>>& v)
 		{
-			return I * alpha * lambda(x) * v[0] / bulk(x) + v[3] / bulk(x);
+			return I * alpha * _lambda(x) * v[0] / bulk(x) + v[3] / bulk(x);
 		},
 		[=](double x, const std::vector<std::complex<double>>& v)
 		{
-			return (4.0 * alpha * alpha * mu(x) * (lambda(x) + mu(x)) / bulk(x) -
-				rho(x) * kappa * kappa) * v[0] + I * alpha * lambda(x) * v[3] / bulk(x);
+			return (4.0 * alpha * alpha * _mu(x) * (_lambda(x) + _mu(x)) / bulk(x) -
+				_rho(x) * kappa * kappa) * v[0] + I * alpha * _lambda(x) * v[3] / bulk(x);
 		},
 		[=](double x, const std::vector<std::complex<double>>& v)
 		{
-			return -rho(x) * kappa * kappa * v[1] + I * alpha * v[2];
+			return -_rho(x) * kappa * kappa * v[1] + I * alpha * v[2];
 		},
 	};
 }
@@ -50,28 +78,28 @@ std::vector<std::function<std::complex<double>(double,
 {
 	auto equations = this->equations(alpha, kappa);
 	const std::function<double(double)> bulk = [=](double t)
-		{
-			return lambda(t) + 2 * mu(t);
-		};
+	{
+		return _lambda(t) + 2 * _mu(t);
+	};
 	std::vector<std::function<std::complex<double>(double,
 		const std::vector<std::complex<double>>&)>> added = {
 		[=](double x, const std::vector<std::complex<double>>& v)
 		{
-			return I * v[1] + I * alpha * v[5] + v[6] / mu(x);
+			return I * v[1] + I * alpha * v[5] + v[6] / _mu(x);
 		},
 		[=](double x, const std::vector<std::complex<double>>& v)
 		{
-			return I * lambda(x) * v[0] / bulk(x) + I * alpha * lambda(x) * v[4] / bulk(x) + v[7] / bulk(x);
+			return I * _lambda(x) * v[0] / bulk(x) + I * alpha * _lambda(x) * v[4] / bulk(x) + v[7] / bulk(x);
 		},
 		[=](double x, const std::vector<std::complex<double>>& v)
 		{
-			return 8.0 * alpha * mu(x) * (lambda(x) + mu(x)) / bulk(x) * v[0] + I * lambda(x) * v[3] / bulk(x)
-			+ (4.0 * alpha * alpha * mu(x) * (lambda(x) + mu(x)) / bulk(x) -
-				rho(x) * kappa * kappa) * v[4] + I * alpha * lambda(x) * v[7] / bulk(x);
+			return 8.0 * alpha * _mu(x) * (_lambda(x) + _mu(x)) / bulk(x) * v[0] + I * _lambda(x) * v[3] / bulk(x)
+			+ (4.0 * alpha * alpha * _mu(x) * (_lambda(x) + _mu(x)) / bulk(x) -
+				_rho(x) * kappa * kappa) * v[4] + I * alpha * _lambda(x) * v[7] / bulk(x);
 		},
 		[=](double x, const std::vector<std::complex<double>>& v)
 		{
-			return  I * v[2] - rho(x) * kappa * kappa * v[5] + I * alpha * v[6];
+			return  I * v[2] - _rho(x) * kappa * kappa * v[5] + I * alpha * v[6];
 		},
 	};
 	equations.insert(equations.end(), added.begin(), added.end());
@@ -86,11 +114,16 @@ boundary_value_problem<std::complex<double>> layer::bvp(std::complex<double> alp
 	};
 }
 
-std::vector<std::complex<double>> layer::evaluate_roots(double kappa) const
+std::vector<std::complex<double>> layer::evaluate_roots() const
 {
-	auto roots = real_roots(kappa);
+	auto roots = real_roots(_kappa);
 	std::vector<std::complex<double>> result(roots.size());
-	std::transform(roots.begin(), roots.end(), result.begin(), [](auto x) {return x.real(); });
+	std::transform(roots.begin(), roots.end(), result.begin(), 
+		[](std::complex<double> x)->double {return x.real(); });
+	roots = imaginary_roots(_kappa);
+	result.insert(result.end(), roots.begin(), roots.end());
+	auto complex_roots = this->roots(initial_root_values, _kappa);
+	result.insert(result.end(), complex_roots.begin(), complex_roots.end());
 	return result;
 }
 
@@ -106,7 +139,8 @@ std::complex<double> layer::dispersion_equation(std::complex<double> alpha,
 	return bvp(alpha, kappa).determinant();
 }
 
-std::complex<double> layer::dispersion_equation_derivative(std::complex<double> alpha, double kappa) const
+std::complex<double> layer::dispersion_equation_derivative(
+	std::complex<double> alpha, double kappa) const
 {
 	const auto bvp = this->bvp(alpha, kappa);
 	auto initials = bvp.initial_conditions();
@@ -170,7 +204,6 @@ std::vector<double> layer::imaginary_roots(double kappa, size_t num_roots) const
 		const auto fb = dispersion_equation({ 0, (i + 1) * h }, kappa).real();
 		if (fa * fb < 0)
 		{
-			//std::cout << fa << " " << fb << std::endl;
 			const auto root = secant_method(i * h, (i + 1) * h,
 				[=](double x)
 				{
@@ -187,18 +220,18 @@ std::vector<double> layer::imaginary_roots(double kappa, size_t num_roots) const
 std::vector<std::complex<double>> layer::roots(
 	const std::vector<std::complex<double>>& initial_values, double kappa) const
 {
-	std::vector<std::complex<double>> result(initial_values.size());
+	std::vector<std::complex<double>> result;
 	size_t j = 0;
-	for (size_t i = 0; i < result.size(); i++)
+	for (size_t i = 0; i < initial_root_values.size(); i++)
 	{
 		try
 		{
 			const auto new_root = newton_method(initial_values[i], kappa);
-			result[j++] = new_root;
+			result.push_back(new_root);
 		}
 		catch (const std::exception&)
 		{
-			result.erase(result.begin() + i);
+			continue;
 		}
 	}
 	return result;
@@ -209,66 +242,6 @@ std::complex<double> layer::roots(std::complex<double> initial_value, double kap
 	return newton_method(initial_value, kappa);
 }
 
-std::vector<double> layer::eigen_frequencies(double max_kappa, double alpha,
-	size_t num_roots) const
-{
-	std::vector<double> result;
-	const auto h = max_kappa / num_roots;
-	double fa = dispersion_equation({ alpha,0 }, 0).real();
-	for (size_t i = 0; i < num_roots; i++)
-	{
-		const double fb = dispersion_equation({ alpha,0 }, (i + 1) * h).real();
-		if (fa * fb < 0)
-		{
-			result.push_back(secant_method(i * h, (i + 1) * h,
-				[=](double x) {
-					return dispersion_equation({ alpha,0 }, x).real();
-				}));
-		}
-		fa = fb;
-	}
-	return result;
-}
-
-
-std::map<double, std::vector<double>> layer::dispersion_set(double max_kappa,
-	size_t freqs) const
-{
-	std::map<double, std::vector<double>> result;
-	const auto h = max_kappa / freqs;
-	for (auto kappa = h; kappa < max_kappa; kappa += h)
-	{
-		std::cout << kappa << std::endl;
-		result[kappa] = real_roots(kappa);
-	}
-	return result;
-}
-
-std::map<double, std::vector<double>> layer::imaginary_dispersion_set(
-	double max_kappa, size_t freqs) const
-{
-	std::map<double, std::vector<double>> result;
-	const auto h = max_kappa / freqs;
-	for (auto kappa = h; kappa < max_kappa; kappa += h)
-	{
-		std::cout << kappa << std::endl;
-		result[kappa] = imaginary_roots(kappa);
-	}
-	return result;
-}
-
-
-std::map<double, std::vector<double>> layer::dispersion_set_alpha(
-	double max_alpha, double max_kappa, size_t freqs) const
-{
-	std::map<double, std::vector<double>> result;
-	const auto h = max_alpha / freqs;
-	for (auto kappa = 0.0; kappa < max_alpha; kappa += h)
-	{
-		result[kappa] = eigen_frequencies(max_kappa, kappa, 40);
-	}
-	return result;
-}
 
 std::complex<double> layer::newton_method(std::complex<double> complex,
 	double kappa, double eps) const
@@ -287,24 +260,4 @@ std::complex<double> layer::newton_method(std::complex<double> complex,
 		}
 	}
 	return complex;
-}
-
-std::map<double, std::complex<double>> layer::dispersional_curve(double max_kappa,
-	std::complex<double> initial_value, size_t freqs) const
-{
-	std::map<double, std::complex<double>> result = { {0.0, initial_value } };
-	const auto h = max_kappa / freqs;
-	for (double kappa = h; kappa < max_kappa; kappa += h)
-	{
-		try
-		{
-			initial_value = newton_method(initial_value, kappa);
-		}
-		catch (...)
-		{
-			break;
-		}
-		result[kappa] = initial_value;
-	}
-	return result;
 }

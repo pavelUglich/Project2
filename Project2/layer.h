@@ -35,7 +35,11 @@ double secant_method(double a, double b, Fun equation, double eps = 0.1e-6)
 class layer
 {
 	// законы неоднородности
-	std::function<double(double)> lambda, mu, rho;
+	std::function<double(double)> _lambda;
+	std::function<double(double)> _mu;
+	std::function<double(double)> _rho;
+	double _kappa;
+	std::vector<std::complex<double>> _roots;
 
 	
 	std::vector<
@@ -52,19 +56,16 @@ class layer
 	> extended(std::complex<double> alpha, double kappa) const;
 		
 	boundary_value_problem<std::complex<double>> bvp(std::complex<double> alpha, double kappa) const;
+	std::vector<std::complex<double>> evaluate_roots() const;
 
 public:
 	layer(std::function<double(double)> lambda, std::function<double(double)> mu,
-	      std::function<double(double)> rho)
-		: lambda(std::move(lambda)),
-		mu(std::move(mu)),
-		rho(std::move(rho))
+	      std::function<double(double)> rho, double kappa)
+		: _lambda(std::move(lambda)),_mu(std::move(mu)), _rho(std::move(rho)),
+		_kappa(kappa)	
 	{
-
+		_roots = this->evaluate_roots();
 	}
-
-	std::vector<std::complex<double>> evaluate_roots(double kappa) const;
-
 
 	std::vector<std::complex<double>> transformant(std::complex<double> alpha, double kappa) const;
 	std::complex<double> dispersion_equation(std::complex<double> alpha, double kappa) const;
@@ -75,13 +76,7 @@ public:
 	std::vector<std::complex<double>> roots(const std::vector<std::complex<double>>& initial_values, double kappa) const;
 	std::complex<double> roots(std::complex<double> initial_values, double kappa) const;
 
-	std::vector<double> eigen_frequencies(double max_kappa, double alpha = 0, size_t num_roots = 40) const;
-	std::map<double, std::vector<double>> dispersion_set(double max_kappa, size_t freqs) const;
-	std::map<double, std::vector<double>> imaginary_dispersion_set(double max_kappa, size_t freqs) const;
-
-	std::map<double, std::vector<double>> dispersion_set_alpha(double max_alpha, double max_kappa, size_t freqs) const;
 	std::complex<double> newton_method(std::complex<double> complex, double kappa, double eps = 0.1e-6) const;
-	std::map<double, std::complex<double>> dispersional_curve(double max_kappa, std::complex<double> initial_value, size_t freqs) const;
 };
 
 
