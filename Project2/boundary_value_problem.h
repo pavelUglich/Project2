@@ -2,9 +2,8 @@
 #include <vector>
 #include <functional>
 #include <map>
-
 #include "OdeSolver.h"
-//#include "Parameters.h"
+
 
 /**
  * \brief краевая задача

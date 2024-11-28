@@ -56,7 +56,10 @@ class layer
 	> extended(std::complex<double> alpha, double kappa) const;
 		
 	boundary_value_problem<std::complex<double>> bvp(std::complex<double> alpha, double kappa) const;
-	std::vector<std::complex<double>> evaluate_roots() const;
+	void evaluate_roots();
+	/*size_t _real;
+	size_t _imaginary;
+	size_t _complex;*/
 
 public:
 	layer(std::function<double(double)> lambda, std::function<double(double)> mu,
@@ -64,16 +67,16 @@ public:
 		: _lambda(std::move(lambda)),_mu(std::move(mu)), _rho(std::move(rho)),
 		_kappa(kappa)	
 	{
-		_roots = this->evaluate_roots();
+		evaluate_roots();
 	}
 
 	std::vector<std::complex<double>> transformant(std::complex<double> alpha, double kappa) const;
 	std::complex<double> dispersion_equation(std::complex<double> alpha, double kappa) const;
 	std::complex<double> dispersion_equation_derivative(std::complex<double> alpha, double kappa) const;
 
-	std::vector<double> real_roots(double kappa, size_t num_roots = 80) const;
-	std::vector<double> imaginary_roots(double kappa, size_t num_roots = 80) const;
-	std::vector<std::complex<double>> roots(const std::vector<std::complex<double>>& initial_values, double kappa) const;
+	void real_roots(size_t num_roots = 80);
+	void imaginary_roots(size_t num_roots = 80);
+	void roots(const std::vector<std::complex<double>>& initial_values);
 	std::complex<double> roots(std::complex<double> initial_values, double kappa) const;
 
 	std::complex<double> newton_method(std::complex<double> complex, double kappa, double eps = 0.1e-6) const;

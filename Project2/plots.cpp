@@ -70,7 +70,7 @@ void plot_the_dispersional_curves(
 		}
 		os << "};\n";
 		os << "\\addplot[smooth, blue] plot coordinates{\n";
-		for (auto x : dispersionSet) {
+		for (auto& x : dispersionSet) {
 			if (i < x.second.size())
 			{
 				os << "(" << x.first << ", " << x.second[i].imag() << ") ";

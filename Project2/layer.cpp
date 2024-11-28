@@ -42,9 +42,9 @@ std::vector<std::function<std::complex<double>(double,
 		std::complex<double> alpha, double kappa) const
 {
 	const std::function<double(double)> bulk = [=](double t)
-	{
-		return _lambda(t) + 2 * _mu(t);
-	};
+		{
+			return _lambda(t) + 2 * _mu(t);
+		};
 	return {
 		[=](double x, const std::vector<std::complex<double>>& v)
 		{
@@ -78,9 +78,9 @@ std::vector<std::function<std::complex<double>(double,
 {
 	auto equations = this->equations(alpha, kappa);
 	const std::function<double(double)> bulk = [=](double t)
-	{
-		return _lambda(t) + 2 * _mu(t);
-	};
+		{
+			return _lambda(t) + 2 * _mu(t);
+		};
 	std::vector<std::function<std::complex<double>(double,
 		const std::vector<std::complex<double>>&)>> added = {
 		[=](double x, const std::vector<std::complex<double>>& v)
@@ -106,7 +106,8 @@ std::vector<std::function<std::complex<double>(double,
 	return equations;
 }
 
-boundary_value_problem<std::complex<double>> layer::bvp(std::complex<double> alpha, double kappa) const
+boundary_value_problem<std::complex<double>> layer::bvp(
+	std::complex<double> alpha, double kappa) const
 {
 	return
 	{
@@ -114,17 +115,14 @@ boundary_value_problem<std::complex<double>> layer::bvp(std::complex<double> alp
 	};
 }
 
-std::vector<std::complex<double>> layer::evaluate_roots() const
+void layer::evaluate_roots()
 {
-	auto roots = real_roots(_kappa);
-	std::vector<std::complex<double>> result(roots.size());
-	std::transform(roots.begin(), roots.end(), result.begin(), 
-		[](std::complex<double> x)->double {return x.real(); });
-	roots = imaginary_roots(_kappa);
-	result.insert(result.end(), roots.begin(), roots.end());
-	auto complex_roots = this->roots(initial_root_values, _kappa);
-	result.insert(result.end(), complex_roots.begin(), complex_roots.end());
-	return result;
+	real_roots();
+	//_real = _roots.size();
+	imaginary_roots();
+	//_imaginary = _roots.size() - _real;
+	roots(initial_root_values);
+	//_complex = _roots.size() - _real - _imaginary;
 }
 
 std::vector<std::complex<double>> layer::transformant(
@@ -146,7 +144,8 @@ std::complex<double> layer::dispersion_equation_derivative(
 	auto initials = bvp.initial_conditions();
 	const auto extended = this->extended(alpha, kappa);
 	// транспозиция
-	matrix<std::complex<double>> transposed = { initials.size(), initials.front().size(), initials };
+	matrix<std::complex<double>> transposed = {
+		initials.size(), initials.front().size(), initials };
 	transposed = transposed.transpose();
 	square_matrix<std::complex<double>> matrix(transposed.get_rows());
 	square_matrix<std::complex<double>> derivative(transposed.get_rows());
@@ -174,70 +173,68 @@ std::complex<double> layer::dispersion_equation_derivative(
 	return result;
 }
 
-std::vector<double> layer::real_roots(double kappa, size_t num_roots) const
+void layer::real_roots(size_t num_roots)
 {
-	std::vector<double> result;
-	const double top = 2.0 * kappa;
+	const double top = 2.0 * _kappa;
 	const auto h = top / num_roots;
-	double fa = this->dispersion_equation({ 0,0 }, kappa).real();
+	double fa = dispersion_equation({ 0,0 }, _kappa).real();
 	for (size_t i = 0; i < num_roots; i++)
 	{
-		const double fb = this->dispersion_equation({ (i + 1) * h,0 }, kappa).real();
+		const double fb = dispersion_equation({ (i + 1) * h,0 }, _kappa).real();
 		if (fa * fb < 0)
 		{
-			result.push_back(secant_method(i * h, (i + 1) * h, [=](double x) {
-				return dispersion_equation({ x,0 }, kappa).real(); }));
+			_roots.push_back(secant_method(i * h, (i + 1) * h, [=](double x) {
+				return dispersion_equation({ x,0 }, _kappa).real(); }));
 		}
 		fa = fb;
 	}
-	return result;
 }
 
-std::vector<double> layer::imaginary_roots(double kappa, size_t num_roots) const
+void layer::imaginary_roots(size_t num_roots)
 {
-	std::vector<double> result;
-	const double top = 5.0;
+	const double top = _kappa + 1.0;
 	const auto h = top / num_roots;
-	double fa = dispersion_equation({ 0,0 }, kappa).real();
+	double fa = dispersion_equation({ 0,0 }, _kappa).real();
 	for (size_t i = 0; i < num_roots; i++)
 	{
-		const auto fb = dispersion_equation({ 0, (i + 1) * h }, kappa).real();
+		const auto fb = dispersion_equation({ 0, (i + 1) * h }, _kappa).real();
 		if (fa * fb < 0)
 		{
 			const auto root = secant_method(i * h, (i + 1) * h,
 				[=](double x)
 				{
-					return dispersion_equation({ 0,x }, kappa).real();
+					return dispersion_equation({ 0,x }, _kappa).real();
 				});
-			std::cout << kappa << ", " << root << std::endl;
-			result.push_back(root);
+			_roots.push_back(I * root);
 		}
 		fa = fb;
 	}
-	return result;
 }
 
-std::vector<std::complex<double>> layer::roots(
-	const std::vector<std::complex<double>>& initial_values, double kappa) const
+void layer::roots(const std::vector<std::complex<double>>& initial_values)
 {
-	std::vector<std::complex<double>> result;
 	size_t j = 0;
 	for (size_t i = 0; i < initial_root_values.size(); i++)
 	{
 		try
 		{
-			const auto new_root = newton_method(initial_values[i], kappa);
-			result.push_back(new_root);
+			const auto new_root = newton_method(initial_values[i], _kappa);
+			if (std::find_if(_roots.begin(), _roots.end(), 
+				[=](auto x) {return abs(new_root-x)< 0.001;}) == _roots.end())
+			{
+				_roots.push_back(new_root);
+				_roots.push_back(-conj(new_root));
+			}
 		}
 		catch (const std::exception&)
 		{
 			continue;
 		}
 	}
-	return result;
 }
 
-std::complex<double> layer::roots(std::complex<double> initial_value, double kappa) const
+std::complex<double> layer::roots(std::complex<double> initial_value,
+	double kappa) const
 {
 	return newton_method(initial_value, kappa);
 }
@@ -247,8 +244,14 @@ std::complex<double> layer::newton_method(std::complex<double> complex,
 	double kappa, double eps) const
 {
 	size_t iter = 0;
-	auto numerator = [=](std::complex<double> x) {return this->dispersion_equation(x, kappa); };
-	auto denumerator = [=](std::complex<double> x) {return this->dispersion_equation_derivative(x, kappa); };
+	auto numerator = [=](std::complex<double> x)
+		{
+			return this->dispersion_equation(x, kappa);
+		};
+	auto denumerator = [=](std::complex<double> x)
+		{
+			return this->dispersion_equation_derivative(x, kappa);
+		};
 	auto a = numerator(complex) / denumerator(complex);
 	while (abs(a) > eps)
 	{
