@@ -125,6 +125,16 @@ void layer::evaluate_roots()
 	//_complex = _roots.size() - _real - _imaginary;
 }
 
+layer::layer(std::function<double(double)> lambda,
+	std::function<double(double)> mu, std::function<double(double)> rho,
+	double kappa) : _lambda(std::move(lambda)), _mu(std::move(mu)),
+	_rho(std::move(rho)), _kappa(kappa)
+{
+	evaluate_roots();
+	for (auto& root : _roots)
+		this->_derivatives.push_back(this->dispersion_equation_derivative(root, _kappa));
+}
+
 std::vector<std::complex<double>> layer::transformant(
 	std::complex<double> alpha, double kappa) const
 {
@@ -219,8 +229,8 @@ void layer::roots(const std::vector<std::complex<double>>& initial_values)
 		try
 		{
 			const auto new_root = newton_method(initial_values[i], _kappa);
-			if (std::find_if(_roots.begin(), _roots.end(), 
-				[=](auto x) {return abs(new_root-x)< 0.001;}) == _roots.end())
+			if (std::find_if(_roots.begin(), _roots.end(),
+				[=](auto x) {return abs(new_root - x) < 0.001; }) == _roots.end())
 			{
 				_roots.push_back(new_root);
 				_roots.push_back(-conj(new_root));

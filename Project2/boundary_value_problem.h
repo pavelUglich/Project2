@@ -35,6 +35,7 @@ public:
 	std::vector<std::vector<T>> initial_conditions() const;
 	std::map<size_t, T> left_conditions() const;
 	std::map<size_t, T> right_conditions() const;
+	std::vector<T> numerator() const;
 };
 
 /**
@@ -77,6 +78,12 @@ std::map<size_t, T> boundary_value_problem<T>::right_conditions() const
 	return _right_conditions;
 }
 
+template<class T>
+std::vector<T> boundary_value_problem<T>::numerator() const
+{
+	return std::vector<T>();
+}
+
 /**
  * \brief находит набор решений вспомогательных задач Коши
  * \return значения решений в точке x = 1 в виде вектора
@@ -96,7 +103,7 @@ boundary_value_problem<T>::cauchy_problem_solutions() const
 		{
 			initials[ii] = conditions[ii][i];
 		}
-		auto solution = 	ode_solver.solve(0, 1, initials);
+		auto solution = ode_solver.solve(0, 1, initials);
 		solutions.push_back(solution);
 	}
 	return solutions;
@@ -164,9 +171,7 @@ boundary_value_problem<T>::boundary_value_problem(
 	_equations(std::move(functions)),
 	_left_conditions(std::move(left_conditions)),
 	_right_conditions(std::move(right_conditions)),
-	_epsilon(epsilon)
-{
-}
+	_epsilon(epsilon) {}
 
 /**
  * \brief решение краевой задачи на правом конце отрезка

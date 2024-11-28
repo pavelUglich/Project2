@@ -40,6 +40,7 @@ class layer
 	std::function<double(double)> _rho;
 	double _kappa;
 	std::vector<std::complex<double>> _roots;
+	std::vector<std::complex<double>> _derivatives;
 
 	
 	std::vector<
@@ -63,12 +64,7 @@ class layer
 
 public:
 	layer(std::function<double(double)> lambda, std::function<double(double)> mu,
-	      std::function<double(double)> rho, double kappa)
-		: _lambda(std::move(lambda)),_mu(std::move(mu)), _rho(std::move(rho)),
-		_kappa(kappa)	
-	{
-		evaluate_roots();
-	}
+	      std::function<double(double)> rho, double kappa);
 
 	std::vector<std::complex<double>> transformant(std::complex<double> alpha, double kappa) const;
 	std::complex<double> dispersion_equation(std::complex<double> alpha, double kappa) const;
