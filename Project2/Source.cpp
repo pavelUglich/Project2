@@ -16,16 +16,64 @@ const std::function<double(double)> bulk = [=](double t) {return lambda(t) + 2 *
 const double pi = 2.0 * acos(0);
 
 
+void showVector(const std::vector<double>& nodes,
+	const std::vector<std::complex<double>>& complexValuedVector,
+	const std::function<double(std::complex<double>)>& mapping,
+	std::ostream& stream)
+{
+	for (size_t i = 0; i < complexValuedVector.size(); i++)
+	{
+		stream << "(" << nodes[i] << ", " << mapping(complexValuedVector[i]) << ") ";
+	}
+}
+
+void addTheCurve(const std::vector<double>& nodes,
+	const std::vector<std::complex<double>>& fieldHomogeneous,
+	std::ofstream& stream, const std::string& color)
+{
+	stream << " \\addplot[line width = 0.25mm, smooth, ";
+	stream << color;
+	stream << "] plot coordinates{\n";
+	showVector(nodes, fieldHomogeneous, [](auto x) { return x.real(); }, stream);
+	stream << " };\n";
+	stream << " \\addplot[smooth, dashed,";
+	stream << color;
+	stream << "] plot coordinates{\n";
+	showVector(nodes, fieldHomogeneous, [](auto x) { return x.imag(); }, stream);
+	stream << " };\n";
+}
 
 
+void plot_the_wave_field(const std::vector<double>& nodes,
+	const std::map<std::string, std::vector<std::complex<double>>>& vectors,
+	const std::string& fileName)
+{
+	std::ofstream stream(fileName);
+	stream << "\\begin{tikzpicture}[scale=1.1]\\tiny\n";
+	stream << "\\begin{axis}[grid]\n";
+	for (const auto& item : vectors)
+	{
+		addTheCurve(nodes, item.second, stream, item.first);
+	}
+	stream << "\\end{axis}\n";
+	stream << "\\end{tikzpicture}\n";
+	stream.close();
+}
 
 
 int main() {
 	const layer l = { lambda, shear_modulus, density, 4 };
-	/*auto v = l.evaluate_roots();
-	for (auto x : v)
+	size_t num_points = 50;
+	double max = 5.0;
+	double h = max / num_points;
+	std::vector<std::complex<double>> w;
+	std::vector<double> nodes;
+	for (size_t i = 0; i < num_points; i++)
 	{
-		std::cout << x << ", ";
-	}*/
+		const auto x = (i + 0.5) * h;
+		nodes.push_back(x);
+		w.push_back(l.displacement(x)[1]);
+	}
+	plot_the_wave_field(nodes, { {"black", w} }, "horiz.txt");
 	system("pause");
 }

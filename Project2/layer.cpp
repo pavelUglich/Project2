@@ -46,20 +46,20 @@ std::vector<std::function<std::complex<double>(double,
 			return _lambda(t) + 2 * _mu(t);
 		};
 	return {
-		[=](double x, const std::vector<std::complex<double>>& v)
+		[this, alpha](double x, const std::vector<std::complex<double>>& v)
 		{
 			return I * alpha * v[1] + v[2] / _mu(x);
 		},
-		[=](double x, const std::vector<std::complex<double>>& v)
+		[this, alpha, bulk](double x, const std::vector<std::complex<double>>& v)
 		{
 			return I * alpha * _lambda(x) * v[0] / bulk(x) + v[3] / bulk(x);
 		},
-		[=](double x, const std::vector<std::complex<double>>& v)
+		[this, alpha, bulk, kappa](double x, const std::vector<std::complex<double>>& v)
 		{
 			return (4.0 * alpha * alpha * _mu(x) * (_lambda(x) + _mu(x)) / bulk(x) -
 				_rho(x) * kappa * kappa) * v[0] + I * alpha * _lambda(x) * v[3] / bulk(x);
 		},
-		[=](double x, const std::vector<std::complex<double>>& v)
+		[this, kappa, alpha](double x, const std::vector<std::complex<double>>& v)
 		{
 			return -_rho(x) * kappa * kappa * v[1] + I * alpha * v[2];
 		},
@@ -77,27 +77,27 @@ std::vector<std::function<std::complex<double>(double,
 		std::complex<double> alpha, double kappa) const
 {
 	auto equations = this->equations(alpha, kappa);
-	const std::function<double(double)> bulk = [=](double t)
+	const std::function<double(double)> bulk = [this](double t)
 		{
 			return _lambda(t) + 2 * _mu(t);
 		};
 	std::vector<std::function<std::complex<double>(double,
 		const std::vector<std::complex<double>>&)>> added = {
-		[=](double x, const std::vector<std::complex<double>>& v)
+		[this, alpha](double x, const std::vector<std::complex<double>>& v)
 		{
 			return I * v[1] + I * alpha * v[5] + v[6] / _mu(x);
 		},
-		[=](double x, const std::vector<std::complex<double>>& v)
+		[this, bulk, alpha](double x, const std::vector<std::complex<double>>& v)
 		{
 			return I * _lambda(x) * v[0] / bulk(x) + I * alpha * _lambda(x) * v[4] / bulk(x) + v[7] / bulk(x);
 		},
-		[=](double x, const std::vector<std::complex<double>>& v)
+		[this, alpha, bulk, kappa](double x, const std::vector<std::complex<double>>& v)
 		{
 			return 8.0 * alpha * _mu(x) * (_lambda(x) + _mu(x)) / bulk(x) * v[0] + I * _lambda(x) * v[3] / bulk(x)
 			+ (4.0 * alpha * alpha * _mu(x) * (_lambda(x) + _mu(x)) / bulk(x) -
 				_rho(x) * kappa * kappa) * v[4] + I * alpha * _lambda(x) * v[7] / bulk(x);
 		},
-		[=](double x, const std::vector<std::complex<double>>& v)
+		[this, kappa, alpha](double x, const std::vector<std::complex<double>>& v)
 		{
 			return  I * v[2] - _rho(x) * kappa * kappa * v[5] + I * alpha * v[6];
 		},
@@ -118,11 +118,8 @@ boundary_value_problem<std::complex<double>> layer::bvp(
 void layer::evaluate_roots()
 {
 	real_roots();
-	//_real = _roots.size();
 	imaginary_roots();
-	//_imaginary = _roots.size() - _real;
 	roots(initial_root_values);
-	//_complex = _roots.size() - _real - _imaginary;
 }
 
 layer::layer(std::function<double(double)> lambda,
@@ -131,14 +128,26 @@ layer::layer(std::function<double(double)> lambda,
 	_rho(std::move(rho)), _kappa(kappa)
 {
 	evaluate_roots();
-	for (auto& root : _roots)
+	for (const auto& root : _roots) {
 		this->_derivatives.push_back(this->dispersion_equation_derivative(root, _kappa));
+		this->_numerators.push_back(this->bvp(root, _kappa).numerator());
+	}
 }
 
 std::vector<std::complex<double>> layer::transformant(
 	std::complex<double> alpha, double kappa) const
 {
 	return bvp(alpha, kappa).solve();
+}
+
+std::vector<std::complex<double>> layer::displacement(double x_1) const
+{
+	std::vector<std::complex<double>> result(_numerators.front().size());
+	for (size_t i = 0; i < _roots.size(); i++)
+	{
+		result = result + _numerators[i] * exp(I * _roots[i] * x_1) / this->_derivatives[i] * I;
+	}
+	return result;
 }
 
 std::complex<double> layer::dispersion_equation(std::complex<double> alpha,
@@ -193,8 +202,11 @@ void layer::real_roots(size_t num_roots)
 		const double fb = dispersion_equation({ (i + 1) * h,0 }, _kappa).real();
 		if (fa * fb < 0)
 		{
-			_roots.push_back(secant_method(i * h, (i + 1) * h, [=](double x) {
-				return dispersion_equation({ x,0 }, _kappa).real(); }));
+			_roots.push_back(secant_method(i * h, (i + 1) * h,
+				[this](double x) {
+					return dispersion_equation({ x,0 }, _kappa).real(); 
+				}
+			));
 		}
 		fa = fb;
 	}

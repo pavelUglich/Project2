@@ -64,6 +64,10 @@ std::vector<T> operator*(
 	const std::vector<std::vector<T>>& matrix,
 	const std::vector<T>& vector)
 {
+	if (matrix.front().size() != vector.size())
+	{
+		throw std::invalid_argument("");
+	}
 	std::vector<T> result(matrix.size());
 	for (size_t i = 0; i < result.size(); i++)
 	{
@@ -75,12 +79,38 @@ std::vector<T> operator*(
 	return result;
 }
 
+
+
 template<class T>
-std::vector<double> operator*(
-	const square_matrix<double>& matrix,
-	const std::vector<double>& vector)
+std::vector<T> operator*(
+	const matrix<T>& matrix,
+	const std::vector<T>& vector)
 {
 	return matrix.get_elements() * vector;
+}
+
+
+template<class T>
+std::vector<T> operator*(const std::vector<T>& vector, const T& value)
+{
+	auto result = vector;
+	for (size_t i = 0; i < result.size(); i++)
+	{
+		result[i] *= value;
+	}
+	return result;
+}
+
+
+template<class T>
+std::vector<T> operator/(const std::vector<T>& vector, const T& value)
+{
+	auto result = vector;
+	for (size_t i = 0; i < result.size(); i++)
+	{
+		result[i] /= value;
+	}
+	return result;
 }
 
 

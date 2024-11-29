@@ -21,6 +21,9 @@ class boundary_value_problem
 	std::vector<std::vector<T>> cauchy_problem_solutions() const;
 	std::vector<T> get_the_initial_conditions(
 		const std::vector<std::vector<T>>& solutions) const;
+	square_matrix<T> slau_matrix(
+		const std::vector<std::vector<T>>& solutions) const;
+	std::vector<T> right_part() const;
 
 public:
 	boundary_value_problem(
@@ -81,7 +84,20 @@ std::map<size_t, T> boundary_value_problem<T>::right_conditions() const
 template<class T>
 std::vector<T> boundary_value_problem<T>::numerator() const
 {
-	return std::vector<T>();
+	const auto solutions = cauchy_problem_solutions();
+	const auto mat = slau_matrix(solutions);
+	const auto rp = right_part();
+	std::vector<T> minors(rp.size());
+	for (size_t i = 0; i < rp.size(); i++)
+	{
+		auto copy = mat;
+		for (size_t ii = 0; ii < rp.size(); ii++)
+		{
+			copy[ii][i] = rp[ii];
+		}
+		minors[i] = copy.det();
+	}
+	return  matrix<T>(solutions.size(), solutions.front().size(), solutions).transpose() * minors;
 }
 
 /**
@@ -118,11 +134,16 @@ template<class T>
 std::vector<T> boundary_value_problem<T>::get_the_initial_conditions(
 	const std::vector<std::vector<T>>& solutions) const
 {
+	return slau_matrix(solutions).linSolve(right_part());
+}
+
+template<class T>
+square_matrix<T> boundary_value_problem<T>::slau_matrix(
+	const std::vector<std::vector<T>>& solutions) const
+{
 	std::vector<std::vector<T>> matrix;
-	std::vector<T> right_part;
 	for (const auto& x : _right_conditions)
 	{
-		right_part.push_back(x.second);
 		std::vector<T> row(_right_conditions.size());
 		for (size_t i = 0; i < row.size(); i++)
 		{
@@ -130,48 +151,46 @@ std::vector<T> boundary_value_problem<T>::get_the_initial_conditions(
 		}
 		matrix.push_back(row);
 	}
-	const square_matrix<T> slau_matrix(_right_conditions.size(), matrix);
-	return slau_matrix.linSolve(right_part);
+	return square_matrix<T>(_right_conditions.size(), matrix);
+}
+
+template<class T>
+std::vector<T> boundary_value_problem<T>::right_part() const
+{
+	std::vector<T> result;
+	for (const auto& x : _right_conditions)
+		result.push_back(x.second);
+	return result;
 }
 
 /**
  * \brief определитель системы метода пристрелки
- * \return определитель системы метода пристрелки 
+ * \return определитель системы метода пристрелки
  */
 template <class T>
 T boundary_value_problem<T>::determinant() const
 {
 	const auto solutions = cauchy_problem_solutions();
-	std::vector<std::vector<T>> matrix;
-	for (const auto& x : _right_conditions)
-	{
-		std::vector<T> row(_right_conditions.size());
-		for (size_t i = 0; i < row.size(); i++)
-		{
-			row[i] = solutions[i][x.first];
-		}
-		matrix.push_back(row);
-	}
-	const square_matrix<T> slau_matrix(_right_conditions.size(), matrix);
-	return slau_matrix.det();
+	return slau_matrix(solutions).det();
 }
 
 /**
  * \brief конструктор
  * \param functions правые части однородных уравнений системы
  * \param left_conditions условия на правом конце отрезка (условия линейные и разделённые)
- * \param right_conditions условия на правом конце отрезка 
+ * \param right_conditions условия на правом конце отрезка
  * \param epsilon погрешность вычислений
  */
 template<class T>
 boundary_value_problem<T>::boundary_value_problem(
-	std::vector<std::function<T(double, const std::vector<T>&)>> functions, 
-	std::map<size_t, T> left_conditions, std::map<size_t, T> right_conditions, 
+	std::vector<std::function<T(double, const std::vector<T>&)>> functions,
+	std::map<size_t, T> left_conditions, std::map<size_t, T> right_conditions,
 	double epsilon) :
 	_equations(std::move(functions)),
 	_left_conditions(std::move(left_conditions)),
 	_right_conditions(std::move(right_conditions)),
-	_epsilon(epsilon) {}
+	_epsilon(epsilon) {
+}
 
 /**
  * \brief решение краевой задачи на правом конце отрезка
