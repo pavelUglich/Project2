@@ -1,13 +1,15 @@
 #include "plots.h"
 
-std::ofstream initialize(const std::string& fileName) {
+std::ofstream initialize(const std::string& fileName) 
+{
 	std::ofstream os(fileName);
 	os << "\\begin{tikzpicture}[scale=1.5]\n";
 	os << "\\begin{axis}[grid]\n";
 	return os;
 }
 
-void finalize(std::ofstream& os) {
+void finalize(std::ofstream& os) 
+{
 	os << "\\end{axis}\n";
 	os << "\\end{tikzpicture}\n";
 	os.close();
@@ -91,7 +93,7 @@ void plot_the_dispersional_curves_alpha(
 		sort(item.second.begin(), item.second.end(),
 			[](auto x, auto y) { return x < y; });
 	}
-	const auto maxFreq = dispersionSet.rbegin()->first;
+	//const auto maxFreq = dispersionSet.rbegin()->first;
 	for (size_t i = 0; i < numberOfCurves; i++) {
 		os << "\\addplot[smooth, black] plot coordinates{\n";
 		for (auto x : dispersionSet) {

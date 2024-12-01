@@ -145,7 +145,7 @@ std::vector<std::complex<double>> layer::displacement(double x_1) const
 	std::vector<std::complex<double>> result(_numerators.front().size());
 	for (size_t i = 0; i < _roots.size(); i++)
 	{
-		result = result + _numerators[i] * exp(I * _roots[i] * x_1) / this->_derivatives[i] * I;
+		result = result + _numerators[i] * exp(I * _roots[i] * x_1) / _derivatives[i] * I;
 	}
 	return result;
 }
@@ -162,7 +162,6 @@ std::complex<double> layer::dispersion_equation_derivative(
 	const auto bvp = this->bvp(alpha, kappa);
 	auto initials = bvp.initial_conditions();
 	const auto extended = this->extended(alpha, kappa);
-	// транспозиция
 	matrix<std::complex<double>> transposed = {
 		initials.size(), initials.front().size(), initials };
 	transposed = transposed.transpose();
