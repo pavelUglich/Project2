@@ -139,6 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Integral.cpp" />
     <ClCompile Include="layer.cpp" />
     <ClCompile Include="plots.cpp" />
     <ClCompile Include="Source.cpp" />
@@ -147,6 +148,7 @@
   <ItemGroup>
     <ClInclude Include="boundary_value_problem.h" />
     <ClInclude Include="ButcherTableau.h" />
+    <ClInclude Include="Integral.h" />
     <ClInclude Include="layer.h" />
     <ClInclude Include="Matrix.h" />
     <ClInclude Include="OdeSolver.h" />

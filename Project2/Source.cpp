@@ -5,6 +5,7 @@
 #include "boundary_value_problem.h"
 #include "layer.h"
 #include"plots.h"
+#include "Integral.h"
 
 
 
@@ -62,7 +63,9 @@ void plot_the_wave_field(const std::vector<double>& nodes,
 
 
 int main() {
-	const layer l = { lambda, shear_modulus, density, 4 };
+	const double kappa = 4;
+	const layer l = { lambda, shear_modulus, density, kappa };
+	Integral integral([=](auto alpha) {return l.transformant(alpha, kappa)[1]; }, kappa);
 	size_t num_points = 50;
 	double max = 5.0;
 	double h = max / num_points;
@@ -72,8 +75,10 @@ int main() {
 	{
 		const auto x = (i + 0.5) * h;
 		nodes.push_back(x);
-		w.push_back(l.displacement(x)[1]);
+		w.push_back(integral.evaluate(x));
+		cout << w.back() << endl;
+		// w.push_back(l.displacement(x)[1]);
 	}
-	plot_the_wave_field(nodes, { {"black", w} }, "horiz.txt");
+	plot_the_wave_field(nodes, { {"red", w} }, "horiz.txt");
 	system("pause");
 }

@@ -111,7 +111,8 @@ boundary_value_problem<std::complex<double>> layer::bvp(
 {
 	return
 	{
-		equations(alpha, kappa), {{0,{0,0}}, {1,{0,0}}},{{2,{0,0}}, {3,{1,0}}}
+		equations(alpha, kappa), {{0,{0,0}}, {1,{0,0}}},{{2,{0,0}}, {3,{1,0}}},
+		exp(-abs(alpha))
 	};
 }
 
@@ -137,7 +138,18 @@ layer::layer(std::function<double(double)> lambda,
 std::vector<std::complex<double>> layer::transformant(
 	std::complex<double> alpha, double kappa) const
 {
-	return bvp(alpha, kappa).solve();
+	const auto m = exp(-abs(alpha));
+	OdeSolver<std::complex<double>> os(equations(alpha, kappa));
+	const auto sol1 = os.solve(0, 1, { 0,0,m,0 });
+	const auto sol2 = os.solve(0, 1, { 0,0,0,m });
+	const auto det = sol1[2] * sol2[3] - sol2[2] * sol1[3];
+	const auto delta1 = -sol2[2];
+	const auto delta2 = sol1[2];
+	//const auto res1 = bvp(alpha, kappa).solve();
+	const auto res2 = { (sol1[0] * delta1 + sol2[0] * delta2) / det
+		, (sol1[1] * delta1 + sol2[1] * delta2) / det };
+
+	return res2;
 }
 
 std::vector<std::complex<double>> layer::displacement(double x_1) const
@@ -145,7 +157,8 @@ std::vector<std::complex<double>> layer::displacement(double x_1) const
 	std::vector<std::complex<double>> result(_numerators.front().size());
 	for (size_t i = 0; i < _roots.size(); i++)
 	{
-		result = result + _numerators[i] * exp(I * _roots[i] * x_1) / _derivatives[i] * I;
+		result = result + _numerators[i] * exp(I * _roots[i] * x_1)
+			/ _derivatives[i] * I;
 	}
 	return result;
 }
@@ -203,7 +216,7 @@ void layer::real_roots(size_t num_roots)
 		{
 			_roots.push_back(secant_method(i * h, (i + 1) * h,
 				[this](double x) {
-					return dispersion_equation({ x,0 }, _kappa).real(); 
+					return dispersion_equation({ x,0 }, _kappa).real();
 				}
 			));
 		}

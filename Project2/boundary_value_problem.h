@@ -17,6 +17,7 @@ class boundary_value_problem
 	std::map<size_t, T> _left_conditions;  // граничные условия слева
 	std::map<size_t, T> _right_conditions; // граничные условия справа
 	double _epsilon; // погрешность
+	double _multiplier;
 
 	std::vector<std::vector<T>> cauchy_problem_solutions() const;
 	std::vector<T> get_the_initial_conditions(
@@ -30,7 +31,7 @@ public:
 		std::vector<std::function<T(double,
 			const std::vector<T>&)>> functions,
 		std::map<size_t, T> left_conditions,
-		std::map<size_t, T> right_conditions, double epsilon = 0.1e-6);
+		std::map<size_t, T> right_conditions, double multiplier = 1.0, double epsilon = 0.1e-6);
 	std::vector<T> solve() const;
 	std::vector<std::vector<T>> solve(
 		const std::vector<double>& points) const;
@@ -58,7 +59,7 @@ boundary_value_problem<T>::initial_conditions() const
 		if (_left_conditions.find(i) == _left_conditions.end())
 		{
 			result[i] = std::vector<T>(cols, 0);
-			result[i][counter++] = 1;
+			result[i][counter++] = _multiplier;//1;
 		}
 		else
 		{
@@ -97,7 +98,8 @@ std::vector<T> boundary_value_problem<T>::numerator() const
 		}
 		minors[i] = copy.det();
 	}
-	return  matrix<T>(solutions.size(), solutions.front().size(), solutions).transpose() * minors;
+	return matrix<T>(solutions.size(), solutions.front().size(), solutions)
+		.transpose() * minors;
 }
 
 /**
@@ -185,12 +187,11 @@ template<class T>
 boundary_value_problem<T>::boundary_value_problem(
 	std::vector<std::function<T(double, const std::vector<T>&)>> functions,
 	std::map<size_t, T> left_conditions, std::map<size_t, T> right_conditions,
-	double epsilon) :
+	double multiplier, double epsilon) :
 	_equations(std::move(functions)),
 	_left_conditions(std::move(left_conditions)),
 	_right_conditions(std::move(right_conditions)),
-	_epsilon(epsilon) {
-}
+	_multiplier(multiplier), _epsilon(epsilon) {}
 
 /**
  * \brief решение краевой задачи на правом конце отрезка
@@ -199,8 +200,8 @@ boundary_value_problem<T>::boundary_value_problem(
 template<class T>
 std::vector<T> boundary_value_problem<T>::solve() const
 {
-	std::vector<std::vector<T>> solutions = cauchy_problem_solutions();
-	std::vector<T> initial_conditions = get_the_initial_conditions(solutions);
+	const std::vector<std::vector<T>> solutions = cauchy_problem_solutions();
+	const std::vector<T> initial_conditions = get_the_initial_conditions(solutions);
 	std::vector<T> result(_equations.size(), 0);
 	for (size_t i = 0; i < solutions.size(); i++)
 	{
