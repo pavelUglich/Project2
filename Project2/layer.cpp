@@ -170,7 +170,6 @@ std::vector<double> layer::imaginary_roots(double kappa, size_t num_roots) const
 		const auto fb = dispersion_equation({ 0, (i + 1) * h }, kappa).real();
 		if (fa * fb < 0)
 		{
-			//std::cout << fa << " " << fb << std::endl;
 			const auto root = secant_method(i * h, (i + 1) * h,
 				[=](double x)
 				{

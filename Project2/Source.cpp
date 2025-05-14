@@ -51,7 +51,7 @@ int main() {
 	double kappa = 0.01;
 	//std::map<double, std::vector<std::complex<double>>> ds;	
 	std::map<double, std::complex<double>> ds;
-	//auto r = l.dispersion_set_alpha(9, 9, 50);//.dispersion_set(9.0, 100);/*.roots(initial_root_values[3], kappa); */// .imaginary_dispersion_set(10, 200);
+	auto r = l.dispersion_set_alpha(9, 9, 50);
 	auto r = l.imaginary_dispersion_set(9, 100);
 	/*while (kappa < 10)
 	{
