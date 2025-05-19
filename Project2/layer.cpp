@@ -90,7 +90,7 @@ std::vector<std::complex<double>> layer::evaluate_roots(double kappa) const
 {
 	auto roots = real_roots(kappa);
 	std::vector<std::complex<double>> result(roots.size());
-	std::transform(roots.begin(), roots.end(), result.begin(), [](auto x) {return x.real(); });
+	std::transform(roots.begin(), roots.end(), result.begin(), [](std::complex<double> x) {return x.real(); });
 	return result;
 }
 

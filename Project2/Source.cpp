@@ -49,11 +49,12 @@ const double pi = 2.0 * acos(0);
 int main() {
 	const layer l = { lambda, shear_modulus, density };
 	double kappa = 0.01;
-	//std::map<double, std::vector<std::complex<double>>> ds;	
-	std::map<double, std::complex<double>> ds;
-	auto r = l.dispersion_set_alpha(9, 9, 50);
-	auto r = l.imaginary_dispersion_set(9, 100);
-	/*while (kappa < 10)
+	std::map<double, std::vector<std::complex<double>>> ds;	
+	//std::map<double, std::complex<double>> ds;
+	//auto r = l.dispersion_set_alpha(9, 9, 50);
+	//auto r = l.imaginary_dispersion_set(9, 100);
+	auto r = l.roots(initial_root_values, kappa);
+	while (kappa < 10)
 	{
 		ds[kappa] = r;
 		kappa += 0.1;
@@ -65,7 +66,7 @@ int main() {
 		{
 			break;
 		}
-	}*/
-	plot_the_imaginary_roots(r, "ds.txt");
+	}
+	//plot_the_imaginary_roots(r, "ds.txt");
 	system("pause");
 }
